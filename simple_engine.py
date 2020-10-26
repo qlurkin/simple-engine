@@ -10,6 +10,7 @@ class Canvas:
 		self.__color = (255, 255, 255)
 		self.__width = 1
 		self.__imageCache = {}
+		self.__soundCache = {}
 
 	def drawPixel(self, x, y):
 		self.__surface.set_at((round(x), round(y)), self.__color)
@@ -78,6 +79,16 @@ class Canvas:
 			print("Warning: Cannot set stroke width to less than 1")
 		self.__width = width
 
+	def playSound(self, path, loop=False):
+		if path not in self.__soundCache:
+			self.__soundCache[path] = pygame.mixer.Sound(path)
+		if loop:
+			loop = -1
+		else:
+			loop = 0
+		self.__soundCache[path].play(loop)
+
+
 class SimpleEngine:
 	def __init__(self, width, height, pixelSize):
 		self.__width = width
@@ -85,6 +96,7 @@ class SimpleEngine:
 		self.__pixelSize = pixelSize
 
 		pygame.init()
+		pygame.mixer.init()
 		self.__window = pygame.display.set_mode((width*pixelSize,height*pixelSize))
 		self.__surface = pygame.Surface((width, height))
 
@@ -118,11 +130,7 @@ if __name__ == "__main__":
 		canvas.clear()
 		canvas.setColor(0, 255, 0)
 		canvas.setStrokeWidth(2)
-		canvas.fillCircle(x, y, 10)
-		canvas.fillTriangle(20, 20, 40, 20, 30, 40)
-		canvas.fillRect(20, 50, 60, 20)
-		canvas.drawLine(50, 50, 100, 150)
-		canvas.drawImage(0, 0, "poop.png")
+		canvas.drawCircle(x, y, 10)
 
 		x += vx * canvas.elapsedTime
 		y += vy * canvas.elapsedTime
