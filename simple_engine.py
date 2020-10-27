@@ -1,4 +1,5 @@
 import pygame
+import key
 
 class ExitApplication(Exception):
 	pass
@@ -51,19 +52,45 @@ class Canvas:
 		self.__surface.fill((red, green, blue))
 
 	@property
-	def mouseX(self):
-		raise NotImplementedError()
-
-	@property
 	def elapsedTime(self):
 		return self.__data["elapsedTime"]
+
+	@property
+	def mouseX(self):
+		raise NotImplementedError()
 
 	@property
 	def mouseY(self):
 		raise NotImplementedError()
 
-	def isPressed(self, key):
-		raise NotImplementedError()
+	def __handleStrKey(self, key):
+		if isinstance(key, str):
+			return self.__data['keyDict'][key]
+		return key
+
+	def __handleModKeys(self, mods):
+		res = 0
+		for mod in mods:
+			res|=mod
+		return res
+
+	def isDown(self, key):
+		try:
+			return self.__handleStrKey(key) in self.__data["keyDown"]
+		except KeyError:
+			return False
+
+	def wasPressed(self, key, mod=[]):
+		try:
+			return (self.__handleStrKey(key), self.__handleModKeys(mod)) in self.__data["keyPressed"]
+		except KeyError:
+			return False
+
+	def wasReleased(self, key, mod=[]):
+		try:
+			return (self.__handleStrKey(key), self.__handleModKeys(mod)) in self.__data["keyReleased"]
+		except KeyError:
+			return False
 
 	@property
 	def width(self):
@@ -117,7 +144,11 @@ class SimpleEngine:
 	def run(self, fn, *args):
 		state = tuple(args)
 		data = {
-			"elapsedTime": 0
+			"elapsedTime": 0,
+			"keyDown": set(),
+			"keyPressed": set(),
+			"keyReleased": set(),
+			"keyDict": {}
 		}
 		canvas = Canvas(self.__surface, data)
 		
@@ -126,12 +157,24 @@ class SimpleEngine:
 			while True:
 				elapsedTime = clock.tick(60)/1000
 				data["elapsedTime"] = elapsedTime
+				pygame.display.set_caption("Simple Engine (FPS: {})".format(round(1/elapsedTime)))
+				
+				data["keyPressed"] = set()
+				data["keyReleased"] = set()
 				
 				for event in pygame.event.get():
 					if event.type == pygame.QUIT:
 							raise ExitApplication()
+					
+					if event.type == pygame.KEYDOWN:
+						data["keyPressed"].add((event.key, event.mod))
+						data["keyDown"].add(event.key)
+						data["keyDict"][event.unicode] = event.key
+					
+					if event.type == pygame.KEYUP:
+						data["keyReleased"].add((event.key, event.mod))
+						data["keyDown"].remove(event.key)
 				
-				pygame.display.set_caption("Simple Engine (FPS: {})".format(round(1/elapsedTime)))
 				state = fn(canvas, *state)
 				self.__window.blit(pygame.transform.scale(self.__surface, self.__window.get_rect().size), (0, 0))
 				pygame.display.flip()
@@ -145,6 +188,12 @@ if __name__ == "__main__":
 		canvas.setStrokeWidth(2)
 		canvas.drawCircle(x, y, 10)
 		canvas.drawText(10, 10, "Prout")
+
+		if canvas.wasPressed('a'):
+			print("A")
+
+		if canvas.wasPressed(key.K_a):
+			print("Q")
 
 		x += vx * canvas.elapsedTime
 		y += vy * canvas.elapsedTime
