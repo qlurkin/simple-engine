@@ -11,6 +11,7 @@ class Canvas:
 		self.__width = 1
 		self.__imageCache = {}
 		self.__soundCache = {}
+		self.__fontCache = {}
 
 	def drawPixel(self, x, y):
 		self.__surface.set_at((round(x), round(y)), self.__color)
@@ -36,13 +37,19 @@ class Canvas:
 	def fillCircle(self, x, y, radius):
 		pygame.draw.circle(self.__surface, self.__color, (round(x), round(y)), radius)
 
-	def drawImage(self, x, y, path):
+	#TODO: Draw part for sprite sheet
+	def drawImage(self, left, top, path, partialLeft=None, partialTop=None, partialWidth=None, partialHeight=None):
+		if partialTop is None or partialLeft is None or partialWidth is None or partialHeight is None:
+			area = None
+		else:
+			area = pygame.Rect(partialLeft, partialTop, partialWidth, partialHeight)
+
 		if path not in self.__imageCache:
 			self.__imageCache[path] = pygame.image.load(path)
-		self.__surface.blit(self.__imageCache[path], (x, y))
+		self.__surface.blit(self.__imageCache[path], (left, top), area)
 
-	def clear(self):
-		self.__surface.fill((0,0,0))
+	def clear(self, color=(0, 0, 0)):
+		self.__surface.fill(color)
 
 	@property
 	def mouseX(self):
@@ -88,6 +95,14 @@ class Canvas:
 			loop = 0
 		self.__soundCache[path].play(loop)
 
+	def drawText(self, left, top, text, fontSize=12, font='freesansbold.ttf'):
+		if (font, fontSize) not in self.__fontCache:
+			self.__fontCache[font, fontSize] = pygame.font.Font(font, fontSize)
+		textImage = self.__fontCache[font, fontSize].render(text, False, self.__color)
+		textRect = textImage.get_rect()
+		textRect.top = top
+		textRect.left = left
+		self.__surface.blit(textImage, textRect)
 
 class SimpleEngine:
 	def __init__(self, width, height, pixelSize):
@@ -114,7 +129,6 @@ class SimpleEngine:
 				data["elapsedTime"] = elapsedTime
 				
 				for event in pygame.event.get():
-					print(event.type)
 					if event.type == pygame.QUIT:
 							raise ExitApplication()
 				
@@ -126,27 +140,28 @@ class SimpleEngine:
 			pass
 
 if __name__ == "__main__":
-	def update(canvas, x, y, vx, vy):
+	def update(canvas: Canvas, x, y, vx, vy):
 		canvas.clear()
 		canvas.setColor(0, 255, 0)
 		canvas.setStrokeWidth(2)
 		canvas.drawCircle(x, y, 10)
+		canvas.drawText(10, 10, "Prout")
 
 		x += vx * canvas.elapsedTime
 		y += vy * canvas.elapsedTime
-		if x <= 5 :
+		if x <= 10 :
 			vx = -vx
-			x = 5
-		if x >= canvas.width-1-5:
+			x = 10
+		if x >= canvas.width-1-10:
 			vx = -vx
-			x = canvas.width-1-5
-		if y <= 5:
+			x = canvas.width-1-10
+		if y <= 10:
 			vy = -vy
-			y = 5
-		if y >= canvas.height-1-5:
+			y = 10
+		if y >= canvas.height-1-10:
 			vy = -vy
-			y = canvas.height-1-5
+			y = canvas.height-1-10
 
 		return x, y, vx, vy
 
-	SimpleEngine(200, 150, 4).run(update, 10, 10, 50, 30)
+	SimpleEngine(200, 150, 1).run(update, 10, 10, 50, 30)
