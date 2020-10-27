@@ -37,7 +37,6 @@ class Canvas:
 	def fillCircle(self, x, y, radius):
 		pygame.draw.circle(self.__surface, self.__color, (round(x), round(y)), radius)
 
-	#TODO: Draw part for sprite sheet
 	def drawImage(self, left, top, path, partialLeft=None, partialTop=None, partialWidth=None, partialHeight=None):
 		if partialTop is None or partialLeft is None or partialWidth is None or partialHeight is None:
 			area = None
@@ -48,8 +47,8 @@ class Canvas:
 			self.__imageCache[path] = pygame.image.load(path)
 		self.__surface.blit(self.__imageCache[path], (left, top), area)
 
-	def clear(self, color=(0, 0, 0)):
-		self.__surface.fill(color)
+	def clear(self, red=0, green=0, blue=0):
+		self.__surface.fill((red, green, blue))
 
 	@property
 	def mouseX(self):
@@ -77,10 +76,10 @@ class Canvas:
 	def exit(self):
 		raise ExitApplication()
 
-	def setColor(self, red, green, blue):
+	def setColor(self, red=255, green=255, blue=255):
 		self.__color = (red, green, blue)
 	
-	def setStrokeWidth(self, width):
+	def setStrokeWidth(self, width=1):
 		if width < 1:
 			width = 1
 			print("Warning: Cannot set stroke width to less than 1")
