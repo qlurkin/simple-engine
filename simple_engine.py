@@ -14,8 +14,11 @@ class Canvas:
 		self.__soundCache = {}
 		self.__fontCache = {}
 
-	def drawPixel(self, x, y):
+	def setPixel(self, x, y):
 		self.__surface.set_at((round(x), round(y)), self.__color)
+
+	def getPixel(self,x, y):
+		return self.__surface.get_at((round(x), round(y)))[:-1]
 
 	def drawRect(self, left, top, width, height):
 		pygame.draw.rect(self.__surface, self.__color, pygame.Rect(left, top, width, height), self.__width)
@@ -131,7 +134,7 @@ class Canvas:
 		self.__surface.blit(textImage, textRect)
 
 class SimpleEngine:
-	def __init__(self, width, height, pixelSize):
+	def __init__(self, width=256, height=240, pixelSize=3):
 		self.__width = width
 		self.__height = height
 		self.__pixelSize = pixelSize
@@ -212,4 +215,4 @@ if __name__ == "__main__":
 
 		return x, y, vx, vy
 
-	SimpleEngine(200, 150, 1).run(update, 10, 10, 50, 30)
+	SimpleEngine().run(update, 10, 10, 50, 30)
