@@ -14,6 +14,12 @@ class Canvas:
 		self.__soundCache = {}
 		self.__fontCache = {}
 
+	def hideMouseCursor(self):
+		pygame.mouse.set_visible(False)
+
+	def showMouseCursor(self):
+		pygame.mouse.set_visible(True)
+
 	def setPixel(self, x, y):
 		self.__surface.set_at((round(x), round(y)), self.__color)
 
@@ -60,11 +66,11 @@ class Canvas:
 
 	@property
 	def mouseX(self):
-		raise NotImplementedError()
+		return self.__data["mousePos"][0]
 
 	@property
 	def mouseY(self):
-		raise NotImplementedError()
+		return self.__data["mousePos"][1]
 
 	def __handleStrKey(self, key):
 		if isinstance(key, str):
@@ -84,16 +90,29 @@ class Canvas:
 			return False
 
 	def wasPressed(self, key, mod=[]):
+		mods = self.__handleModKeys(mod)
 		try:
-			return (self.__handleStrKey(key), self.__handleModKeys(mod)) in self.__data["keyPressed"]
+			key = self.__handleStrKey(key)
 		except KeyError:
 			return False
 
+		for event in self.__data["keyPressed"]:
+			if event[0] == key and event[1] & mods:
+				return True
+		return False
+		
+
 	def wasReleased(self, key, mod=[]):
+		mods = self.__handleModKeys(mod)
 		try:
-			return (self.__handleStrKey(key), self.__handleModKeys(mod)) in self.__data["keyReleased"]
+			key = self.__handleStrKey(key)
 		except KeyError:
 			return False
+
+		for event in self.__data["keyReleased"]:
+			if event[0] == key and event[1] & mods:
+				return True
+		return False
 
 	@property
 	def width(self):
@@ -151,7 +170,8 @@ class SimpleEngine:
 			"keyDown": set(),
 			"keyPressed": set(),
 			"keyReleased": set(),
-			"keyDict": {}
+			"keyDict": {},
+			"mousePos": (0, 0)
 		}
 		canvas = Canvas(self.__surface, data)
 		
@@ -164,6 +184,9 @@ class SimpleEngine:
 				
 				data["keyPressed"] = set()
 				data["keyReleased"] = set()
+
+				mouseX, mouseY = pygame.mouse.get_pos()
+				data["mousePos"] = (mouseX/self.__pixelSize, mouseY/self.__pixelSize)
 				
 				for event in pygame.event.get():
 					if event.type == pygame.QUIT:
@@ -177,26 +200,49 @@ class SimpleEngine:
 					if event.type == pygame.KEYUP:
 						data["keyReleased"].add((event.key, event.mod))
 						data["keyDown"].remove(event.key)
-				
+
+					if event.type == pygame.MOUSEBUTTONUP:
+						mod = pygame.key.get_mods()
+						key = -event.button
+						mouseX, mouseY = event.pos
+						data["mousePos"] = (mouseX/self.__pixelSize, mouseY/self.__pixelSize)
+						data["keyReleased"].add((key, mod))
+						data["keyDown"].remove(key)
+
+					if event.type == pygame.MOUSEBUTTONDOWN:
+						mod = pygame.key.get_mods()
+						key = -event.button
+						mouseX, mouseY = event.pos
+						data["mousePos"] = (mouseX/self.__pixelSize, mouseY/self.__pixelSize)
+						data["keyPressed"].add((key, mod))
+						data["keyDown"].add(key)
+
 				state = fn(canvas, *state)
 				self.__window.blit(pygame.transform.scale(self.__surface, self.__window.get_rect().size), (0, 0))
 				pygame.display.flip()
 		except ExitApplication:
-			pass
+			pass 
 
 if __name__ == "__main__":
 	def update(canvas: Canvas, x, y, vx, vy):
 		canvas.clear()
+		canvas.hideMouseCursor()
 		canvas.setColor(0, 255, 0)
 		canvas.setStrokeWidth(2)
 		canvas.drawCircle(x, y, 10)
-		canvas.drawText(10, 10, "Prout")
+		canvas.drawText(canvas.mouseX, canvas.mouseY, "Prout")
 
 		if canvas.wasPressed('a'):
 			print("A")
 
 		if canvas.wasPressed(key.K_a):
 			print("Q")
+
+		if canvas.wasPressed(key.MOUSEBUTTON_LEFT, [key.KMOD_CTRL]):
+			print("click")
+
+		if canvas.wasReleased(key.MOUSEBUTTON_LEFT, [key.KMOD_ALT]):
+			print("declick")
 
 		x += vx * canvas.elapsedTime
 		y += vy * canvas.elapsedTime
