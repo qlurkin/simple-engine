@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 import pygame
 import key
 
@@ -47,15 +49,22 @@ class Canvas:
 	def fillCircle(self, x, y, radius):
 		pygame.draw.circle(self.__surface, self.__color, (round(x), round(y)), radius)
 
-	def drawImage(self, left, top, path, partialLeft=None, partialTop=None, partialWidth=None, partialHeight=None):
+	def drawSprite(self, left, top, path, partialLeft=None, partialTop=None, partialWidth=None, partialHeight=None, angle=0):
+		if path not in self.__imageCache:
+			self.__imageCache[path] = pygame.image.load(path)
+
 		if partialTop is None or partialLeft is None or partialWidth is None or partialHeight is None:
-			area = None
+			area = pygame.Rect(left, top, self.__imageCache[path].width, self.__imageCache[path].height)
 		else:
 			area = pygame.Rect(partialLeft, partialTop, partialWidth, partialHeight)
 
-		if path not in self.__imageCache:
-			self.__imageCache[path] = pygame.image.load(path)
-		self.__surface.blit(self.__imageCache[path], (left, top), area)
+		if angle==0:
+			self.__surface.blit(self.__imageCache[path], (left, top), area)
+		else:
+			temp = pygame.Surface((area.width, area.height), pygame.SRCALPHA)
+			temp.blit(self.__imageCache[path], (0, 0), area)
+			temp = pygame.transform.rotate(temp, angle)
+			self.__surface.blit(temp, (left, top))
 
 	def clear(self, red=0, green=0, blue=0):
 		self.__surface.fill((red, green, blue))
@@ -95,9 +104,8 @@ class Canvas:
 			key = self.__handleStrKey(key)
 		except KeyError:
 			return False
-
 		for event in self.__data["keyPressed"]:
-			if event[0] == key and event[1] & mods:
+			if event[0] == key and (mods == 0 or event[1] & mods):
 				return True
 		return False
 		
@@ -110,7 +118,7 @@ class Canvas:
 			return False
 
 		for event in self.__data["keyReleased"]:
-			if event[0] == key and event[1] & mods:
+			if event[0] == key and (mods == 0 or event[1] & mods):
 				return True
 		return False
 
@@ -180,7 +188,7 @@ class SimpleEngine:
 			while True:
 				elapsedTime = clock.tick(60)/1000
 				data["elapsedTime"] = elapsedTime
-				pygame.display.set_caption("Simple Engine (FPS: {})".format(round(1/elapsedTime)))
+				pygame.display.set_caption("Simple Engine (FPS: {})".format(round(1/elapsedTime, 3)))
 				
 				data["keyPressed"] = set()
 				data["keyReleased"] = set()
